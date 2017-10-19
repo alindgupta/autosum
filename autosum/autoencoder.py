@@ -16,25 +16,28 @@ class Autoencoder:
                  corpus: str,
                  embedding_size: int,
                  learning_rate: float,
-                 num_epochs: int) -> None:
+                 num_epochs: int,
+                 input_size: int) -> None:
         """ """
         self.corpus = corpus
         self.embedding_size = embedding_size
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
+        self.batch_size = 150 # dix
+        self.input_size = input_size
 
     def preprocess(self):
         """ """
         pass
 
     @functools.lru_cache(maxsize=1)
-    def embed(self) -> np.array[float]:
+    def embed(self, batcher_func):
         """
         Implementation of a Word2Vec form of autoencoder.
         :returns A tensorflow/numpy array containing embeddings
 
         """
-        with tf.Graph('Autoencoder').as_default():
+        with tf.Graph().as_default():
             with tf.name_scope('placeholders'):
                 inputs = tf.placeholder(tf.int32, [self.batch_size], name='inputs')
                 labels = tf.placeholder(tf.int32, [self.batch_size, 1], name='labels')
@@ -43,7 +46,7 @@ class Autoencoder:
                 with tf.name_scope('embeddings'):
                     embeddings = tf.get_variable('embeddings',
                                                  [self.input_size, self.embedding_size],
-                                                 initializer=tf.random_normal_initializer(0., 1.))
+                                                 initializer=tf.truncated_normal_initializer(0., 1.))
                     embeddings_ = tf.nn.embedding_lookup(embeddings, inputs)
 
                 with tf.name_scope('nce_weights'):
@@ -69,14 +72,14 @@ class Autoencoder:
                 with tf.Session() as sess:
                     sess.run(tf.global_variables_initializer())
                     average_loss = 0.0
-                    num_steps = 1e5
+                    num_steps = 10000
                     for step in range(num_steps):
-                        batch_inputs, batch_outputs = batcherFunc(self.corpus, self.batch_size)
+                        batch_inputs, batch_outputs = batcher_func(self.corpus, self.batch_size)
                         _, loss_value = sess.run([optimizer, loss],
                                                  feed_dict={inputs: batch_inputs,
                                                             labels: batch_outputs})
                         average_loss += loss_value
                         if step % 100 == 0:
-                            print('The average loss for step {} was {0:.3f}.'
+                            print('The average loss for step {} was {}.'
                                   .format(step, loss_value))
-            return embeddings.eval()
+                    return embeddings.eval()
