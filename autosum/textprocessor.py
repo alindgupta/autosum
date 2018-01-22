@@ -20,8 +20,7 @@ def is_numeric(val: str) -> bool:
 class TextProcessor:
     def __init__(self, filepath):
         if not os.path.isfile(filepath):
-            raise FileNotFoundError('File "{}" was not found!'
-                                    .format(filepath))
+            raise FileNotFoundError(f'File "{filepath}" was not found!')
         self._file = filepath
         self._vocabulary = {}
         self._corpus = []
@@ -37,9 +36,11 @@ class TextProcessor:
                 tokens = [token.lower() for tokenlist in tokenlists
                           for token in tokenlist
                           if token not in stopwords
-                          or not is_numeric(token)]
+                          and not is_numeric(token)]
 
         except IOError:
+            raise
+        except Exception:
             raise
 
         counter = dict(collections.Counter(tokens)
