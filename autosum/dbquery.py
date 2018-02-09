@@ -1,5 +1,3 @@
-# TODO - make a bit more functional so we can parallelize operations
-
 """
 dbquery.py
 ~~~~~~~~~~~~~~~
@@ -12,7 +10,6 @@ import functools
 import argparse
 import datetime
 from typing import Tuple
-import multiprocessing
 import requests
 from bs4 import BeautifulSoup
 
@@ -23,32 +20,36 @@ efetch_base = url_base + 'efetch.fcgi?'
 
 
 class DBQuery:
-    def __init__(
-            self,
-            query: str,
-            db='pubmed'):
-        """
-        Initialize a DBQuery object.
+    def __init__(self, query: str, retmax=0, db='pubmed'):
+        """ Initialize a DBQuery object.
 
-        :param query: A term to search (eg. 'breast cancer')
-        :param db: Database, one of 'pubmed' or 'pmc'
-        :param retmax: Maximum number of results to fetch
+        Parameters
+        ----------
+        query: string
+            Search term (eg. 'breast cancer').
+        db: string
+            Database to query. Currently, only `pubmed` is supported.
+
+        Raises
+        ------
+        ValueError: if an empty query is provided.
 
         """
         if query == '':
-            raise ValueError('Please provide a string')
+                raise ValueError('Please provide a string')
 
         self.db = db
         self._query = '+'.join(query.split(' '))
         self._count = 0
-
+        self._retmax = retmax
 
     @functools.lru_cache(maxsize=1)
-    def esearch(self) -> Tuple[str, str, int]:
-        """
-        Execute a search request from the database.
+    def _esearch(self) -> Tuple[str, str, int]:
+        """ Execute a search request from Pubmed (i.e. fetch PMID/UIDs).
 
-        :returns: A tuple containing WebEnv, Query key and PMID/UID counts
+        Returns
+        -------
+        Tuple[str, str, int] of WebEnv, Query key and PMID/UID counts.
 
         """
         url = esearch_base + 'db={self.db}&term={self._query}&usehistory=y'
@@ -62,19 +63,27 @@ class DBQuery:
             raise
         return webenv, query_key, int(count)
 
-    
     def fetch(self, filename, verbose=False, timeout=0.001) -> str:
-        """
-        Execute a fetch request from the database.
+        """ Execute a fetch request from the database.
 
-        :param timeout: Timeout parameter for Requests.get()
-        :returns: The filename to which data was written
+        Parameters
+        ----------
+        filename: str
+            A filename/absolute filepath to write data to.
+        verbose: bool
+            Print progress bars.
+        timeout: float
+            Timeout (in milliseconds) for Requests.get().
+
+        Returns
+        ------
+        None.
 
         """
-        webenv, query_key, count = self.esearch()
+        webenv, query_key, count = self._esearch()
         if self._count == 0:
             raise ValueError('Zero PMID/UID count, check query')
-        retmax = 500
+        retmax = self._retmax if self._retmax > 0 else 500
         retstart = 0
         filename = (self._query + datetime.date.today().strftime('%d%B%Y') + '.txt')
         with open(filename, 'a') as file_handle:
@@ -93,13 +102,13 @@ class DBQuery:
                     parse = bs.find_all('abstracttext')
                     for item in parse:
                         abstracts += item.text + '\n'
-                    file_handle.write(abstracts)
+                        file_handle.write(abstracts)
                 except requests.exceptions.RequestException:
                     pass
                 except Exception:
                     raise
                 retstart += retmax
-        return filename
+        return
 
     @property
     def count(self):
@@ -110,12 +119,15 @@ class DBQuery:
         return self._query
 
     def __repr__(self):
-        return '<class DBQuery, query={}>'.format(self._query)
+        return f'<class DBQuery, query={self._query}>'
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--query', '-q', help='Enter search terms to query Pubmed.')
+    parser.add_argument(
+        '--query',
+        '-q',
+        help='Enter search terms to query Pubmed.')
     args = parser.parse_args()
     dbquery = DBQuery(args.query)
     dbquery.fetch('temp.txt')
