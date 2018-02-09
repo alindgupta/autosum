@@ -15,7 +15,7 @@ def tfboard_summaries(args):
     with tf.name_scope('summary'):
         pass
 
-
+    
 class Autoencoder:
     def __init__(
             self,
@@ -24,12 +24,23 @@ class Autoencoder:
             learning_rate: float,
             num_epochs: int,
             input_size: int):
-        """ """
+
+        """ 
+        Initializer for class `Autoencoder`
+        
+        :param corpus: the corpus for embedding
+        :param embedding_size: size of the hidden state
+        :param learning_rate: learning rate
+        :param num_epochs: number of epochs to train
+        :param input_size: (decremented)
+
+        """
+        
         self.corpus = corpus
         self.embedding_size = embedding_size
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
-        self.batch_size = 150  # dix
+        self.batch_size = 150
         self.input_size = input_size
         self.logdir = '.'
 
@@ -41,6 +52,8 @@ class Autoencoder:
     def embed(self, batcher_func):
         """
         Implementation of a Word2Vec form of autoencoder.
+
+        :param batcher_func: a function that produces batches
         :returns A tensorflow/numpy array containing embeddings
 
         """
@@ -86,10 +99,11 @@ class Autoencoder:
                             num_classes=self.input_size))
 
                 with tf.name_scope('optimizer'):
-                    optimizer = tf.train.AdamOptimizer(self.learning_rate).minimize(loss)
+                    optimizer = tf.train.AdamOptimizer(
+                        self.learning_rate).minimize(loss)
 
                 with tf.Session() as sess:
-                    sess.run(tf.global_variables_initializer())
+s                   sess.run(tf.global_variables_initializer())
 
                     # tensorboard summaries
                     writer = tf.summary.FileWriter(self.logdir,
@@ -98,14 +112,24 @@ class Autoencoder:
                     summary_op = tf.summary.merge_all()
                     
                     average_loss = 0.0
-                    num_steps = 10000
+                    num_steps = 1e5
                     for step in range(num_steps):
-                        batch_inputs, batch_outputs = batcher_func(self.corpus, self.batch_size)
-                        _, loss_value, summary = sess.run([optimizer, loss, summary_op],
-                                                          feed_dict={inputs: batch_inputs,
-                                                                     labels: batch_outputs})
+                        batch_inputs, batch_outputs = batcher_func(
+                            self.corpus,
+                            self.batch_size)
+                        _, loss_value, summary = sess.run(
+                            [optimizer, loss, summary_op],
+                            feed_dict={inputs: batch_inputs,
+                                       labels: batch_outputs})
                         average_loss += loss_value
                         writer.add_summary(summary, step)
                         if step % 100 == 0:
-                            print('The average loss for step {} was {}.'.format(step, loss_value))
+                            print(f'The average loss for step {step} was {loss_value}.')
                     return embeddings.eval()     
+
+        def nearest(self, token, n, dist='euclidean') -> List[str]:
+            if dist not in ('euclidean', 'mahalanobis', 'kldiv'):
+                raise ValueError(f'Unknown distance metric: {dist}')
+
+            if dist == 'euclidean':
+                return 
