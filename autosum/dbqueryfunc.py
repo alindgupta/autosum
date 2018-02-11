@@ -35,7 +35,7 @@ def process_request(url, tags):
             if len(set(data)) == 1:
                 contents[tag] = data[0].text
             else:
-                contents[tag] = data
+                contents[tag] = [item.text for item in data]
     except requests.exceptions.RequestException:
         raise
     except Exception:
@@ -129,11 +129,10 @@ class DBQuery:
                           f'retmode=xml'))
                 try:
                     contents = process_request(url, 'abstracttext')
-                    file_handle.write('\n'.join(item.text for item in contents['abstracttext']))
+                    file_handle.write('\n'.join(contents['abstracttext']))
                 except Exception:
                     raise
                 retstart += retmax
-        print(filename)
         return filename
 
     def __repr__(self):
@@ -148,5 +147,4 @@ if __name__ == '__main__':
         help='Enter search terms to query Pubmed.')
     args = parser.parse_args()
     dbquery = DBQuery(args.query)
-    dbquery._esearch()
     dbquery.efetch('temp.txt')
