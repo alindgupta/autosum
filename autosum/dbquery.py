@@ -52,7 +52,7 @@ class DBQuery:
         Tuple[str, str, int] of WebEnv, Query key and PMID/UID counts.
 
         """
-        url = esearch_base + 'db={self.db}&term={self._query}&usehistory=y'
+        url = esearch_base + f'db={self.db}&term={self._query}&usehistory=y'
         try:
             raw_html = requests.get(url)
             parse = BeautifulSoup(raw_html.content, 'html.parser')
@@ -63,23 +63,7 @@ class DBQuery:
             raise
         return webenv, query_key, int(count)
 
-    def fetch(self, filename, verbose=False, timeout=0.001) -> str:
-        """ Execute a fetch request from the database.
-
-        Parameters
-        ----------
-        filename: str
-            A filename/absolute filepath to write data to.
-        verbose: bool
-            Print progress bars.
-        timeout: float
-            Timeout (in milliseconds) for Requests.get().
-
-        Returns
-        ------
-        None.
-
-        """
+    def fetch(self, filename, verbose=False) -> str:
         webenv, query_key, count = self._esearch()
         if self._count == 0:
             raise ValueError('Zero PMID/UID count, check query')
@@ -91,24 +75,25 @@ class DBQuery:
                 abstracts = ''
                 url = (efetch_base
                        + (f'db={self.db}&'
-                          'retstart={retstart}&'
-                          'retmax={retmax}&'
-                          'WebEnv={webenv}&'
-                          'query_key={query_key}&'
-                          'retmode=xml'))
+                          f'retstart={retstart}&'
+                          f'retmax={retmax}&'
+                          f'WebEnv={webenv}&'
+                          f'query_key={query_key}&'
+                          f'retmode=xml'))
                 try:
-                    raw_html = requests.get(url, timeout=timeout)
+                    raw_html = requests.get(url)
                     bs = BeautifulSoup(raw_html.content)
                     parse = bs.find_all('abstracttext')
                     for item in parse:
                         abstracts += item.text + '\n'
+                        print(item.text)
                         file_handle.write(abstracts)
                 except requests.exceptions.RequestException:
                     pass
                 except Exception:
                     raise
                 retstart += retmax
-        return
+        print('ok')
 
     @property
     def count(self):
@@ -130,4 +115,5 @@ if __name__ == '__main__':
         help='Enter search terms to query Pubmed.')
     args = parser.parse_args()
     dbquery = DBQuery(args.query)
-    dbquery.fetch('temp.txt')
+    dbquery._esearch()
+    

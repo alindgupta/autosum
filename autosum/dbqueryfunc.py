@@ -9,7 +9,7 @@ esearch_base = url_base + 'esearch.fcgi?'
 efetch_base = url_base + 'efetch.fcgi?'
 
 
-def process_request(url, tags, parser='html.parser'):
+def process_request(url, tags):
     """ Scrape a webpage and extract contents of an html tag.
 
     Parameters
@@ -28,10 +28,14 @@ def process_request(url, tags, parser='html.parser'):
     if isinstance(tags, str):
         tags = [tags]
     try:
-        raw_html = requests.get(url, timeout=0.001)
-        parse = BeautifulSoup(raw_html.content, parser)
+        raw_html = requests.get(url)
+        parse = BeautifulSoup(raw_html.content, 'html.parser')
         for tag in tags:
-            contents[tag] = parse.find(tag).text
+            data = parse.find_all(tag)
+            if len(set(data)) == 1:
+                contents[tag] = data[0].text
+            else:
+                contents[tag] = data
     except requests.exceptions.RequestException:
         raise
     except Exception:
@@ -82,7 +86,7 @@ class DBQuery:
         """
         url = esearch_base + f'db={self._db}&term={self._query}&usehistory=y'
         try:
-            contents = process_request(url, ['webenv', 'queryKey', 'count'])
+            contents = process_request(url, ['webenv', 'querykey', 'count'])
         except Exception:
             raise
         self._count = contents['count']
@@ -104,7 +108,7 @@ class DBQuery:
         """
         data = self._esearch()
         webenv = data['webenv']
-        query_key = data['queryKey']
+        query_key = data['querykey']
         retmax = max(self._retmax, 500)
 
         if not filename or not filename.endswith('.txt'):
@@ -113,22 +117,23 @@ class DBQuery:
                         + '.txt')
 
         with open(filename, 'a') as file_handle:
-            count = self._count
+            count = int(self._count)
             retstart = 0
             while retstart < count:
                 url = (efetch_base
-                       + (f'db={self.db}&'
-                          'retstart={retstart}&'
-                          'retmax={retmax}&'
-                          'WebEnv={webenv}&'
-                          'query_key={query_key}&'
-                          'retmode=xml'))
+                       + (f'db={self._db}&'
+                          f'retstart={retstart}&'
+                          f'retmax={retmax}&'
+                          f'WebEnv={webenv}&'
+                          f'query_key={query_key}&'
+                          f'retmode=xml'))
                 try:
                     contents = process_request(url, 'abstracttext')
-                    file_handle.write('\n'.join(contents['abstracttext']))
+                    file_handle.write('\n'.join(item.text for item in contents['abstracttext']))
                 except Exception:
                     raise
                 retstart += retmax
+        print(filename)
         return filename
 
     def __repr__(self):
@@ -143,4 +148,5 @@ if __name__ == '__main__':
         help='Enter search terms to query Pubmed.')
     args = parser.parse_args()
     dbquery = DBQuery(args.query)
-    dbquery.fetch('temp.txt')
+    dbquery._esearch()
+    dbquery.efetch('temp.txt')
