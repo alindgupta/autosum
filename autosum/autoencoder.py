@@ -103,7 +103,7 @@ class Autoencoder:
                         self.learning_rate).minimize(loss)
 
                 with tf.Session() as sess:
-s                   sess.run(tf.global_variables_initializer())
+                    sess.run(tf.global_variables_initializer())
 
                     # tensorboard summaries
                     writer = tf.summary.FileWriter(self.logdir,
