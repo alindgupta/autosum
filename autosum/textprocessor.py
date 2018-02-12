@@ -49,9 +49,9 @@ class TextProcessor:
         self._vocabulary = {token: _id for _id, token
                             in enumerate(counter.keys(), start=1)}
         self._vocabulary['UNK'] = 0
-        
-        return [self._vocabulary[token] for token in tokens
+        self._corpus = [self._vocabulary[token] for token in tokens
                 if token in counter]
+        return self._corpus
 
     def _clear_cache(self):
         self.process.cache_clear()
