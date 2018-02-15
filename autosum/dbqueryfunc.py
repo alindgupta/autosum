@@ -35,7 +35,7 @@ def process_request(url, tags):
             if len(set(data)) == 1:
                 contents[tag] = data[0].text
             else:
-                contents[tag] = [item.text for item in data]
+                contents[tag] = (item.text for item in data)
     except requests.exceptions.RequestException:
         raise
     except Exception:
