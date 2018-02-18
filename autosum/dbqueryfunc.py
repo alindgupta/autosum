@@ -3,6 +3,8 @@ import datetime
 import functools
 import requests
 from bs4 import BeautifulSoup
+from multiprocessing import Pool, Queue
+from multithreading import Thread
 
 url_base = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
 esearch_base = url_base + 'esearch.fcgi?'
@@ -68,6 +70,7 @@ class DBQuery:
         self._retmax = int(retmax)
         self._query = '+'.join(query.split(' '))
         self._count = 0
+        self._lock = multiprocessing.Lock()
 
     @property
     def query(self):
@@ -134,6 +137,29 @@ class DBQuery:
                     raise
                 retstart += retmax
         return filename
+
+    def run(self, q):
+        """ Multiprocessing method """
+        data = self._esearch()
+        webenv = data['webenv']
+        query_key = data['query_key']
+        retmax = max(self._retmax, 500))
+        retstart = multiprocessing.Value('i', 0)
+        with self._lock.get_lock():
+            url = (efetch_base
+                    + (f'db={self._db}&'
+                        f'retstart={retstart}&'
+                        f'retmax={retmax}&'
+                        f'WebEnv={webenv}&'
+                        f'query_key={query_key}&'
+                        f'retmode=xml'))
+            retstart.value += retmax
+        
+        
+        t.join()
+        return
+        
+        
 
     def __repr__(self):
         return f'<class DBQuery, query={self._query}>, count={self._count}'
