@@ -1,3 +1,28 @@
+# -*- coding: utf-8 -*-
+
+""" textprocessor.py
+
+This module uses the NCBI E-utilities to retrieve abstracts
+and saves them to a file. Multiple processes can be used to
+parallelize web scraping.
+
+Requires Python 3.6 or higher.
+
+Example:
+        $ python3 dbquery.py -f "summary.txt" -q "breast cancer BRCA1" -n 4
+
+Attributes:
+     DbQuery (class): Invoke the ``run`` method after initialization.
+         Some queries can take a while to download due to the large number
+         of studies (eg. "cancer"). It is often useful to qualify queries
+         to make them less generic (eg. "breast cancer BRCA1").
+
+Todo:
+    * Command line parsing.
+    * Stream instead of bulk download to save memory usage.
+    * Pipe parsing and tokenization to reduce IO time.
+
+"""
 import os
 import functools
 import collections
