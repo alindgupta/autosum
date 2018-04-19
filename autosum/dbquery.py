@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""dbquery.py
+""" dbquery.py
 
 This module uses the NCBI E-utilities to retrieve abstracts
 and saves them to a file. Multiple processes can be used to
@@ -197,6 +197,6 @@ class DbQuery:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Perform an E-fetch')
-    parser.add_argument('query', nargs='+', type=str)
+    parser.add_argument('-q', nargs='+', type=str)
     parser.add_argument('-f', default='')
     args = parser.parse_args()
