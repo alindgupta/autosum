@@ -1,3 +1,2 @@
-autosum
 requests>=2.10
 tensorflow>=1.0
